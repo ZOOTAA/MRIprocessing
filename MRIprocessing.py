@@ -1,7 +1,10 @@
 import sys
 import os
 import argparse
-
+import numpy as np
+import nibabel as nib
+import nibabel.orientations as nio
+import matplotlib as plt
 
 if __name__ == '__main__':
     # Command line parsing
@@ -26,6 +29,22 @@ if __name__ == '__main__':
     if fext[1] == "nii" or (fext[1] == 'gz' and fext[0] == 'nii'):
         # .nii medical image file
         print("Load .nii medical image file")
+        img_nib = nib.load(args.input)
+        # array info
+        img_data = img_nib.get_fdata()
+        print('\timage shape:', img_nib.shape)
+        print('\tdata shape:', img_data.shape)
+        print('\tdata type:', type(img_data))
+        # volume info
+        zooms = img_nib.header.get_zooms() # spacing between voxel
+        print('\tzooms of the voxel:', zooms)
+        # R: right, L: left, A: anterior, P: posteria, I: inferior, S: superior
+        axs_code = nio.ornt2axcodes(nio.io_orientation(img_nib.affine))
+        print('\timage orientation code:', axs_code) # axis positive direction towards
+        # global info
+        # print('\taffine matrix:', img_nib.affine)
     else:
         # not supported file type
         print("Input file type is not supported")
+        sys.exit()
+
