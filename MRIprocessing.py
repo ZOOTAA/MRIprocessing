@@ -4,24 +4,67 @@ import argparse
 import numpy as np
 import nibabel as nib
 import nibabel.orientations as nio
-import matplotlib as plt
+import matplotlib.pyplot as plt
+from skimage.restoration import denoise_nl_means,  estimate_sigma
+
+def denoiseSlice(in_slice):
+    """
+    Denoise image with scikit image Non Local Means (NLM)
+    Input:
+        in_slice: 2d array, input image
+    Output:
+        NLM_skimg_denoise_img: 2d array
+    """
+    if np.mean(in_slice) == 0:
+        # RuntimeWarning: Mean of empty slice
+        NLM_skimg_denoise_img = in_slice
+    else:
+        sigma_est = np.mean(estimate_sigma(in_slice))
+        NLM_skimg_denoise_img = denoise_nl_means(
+            in_slice,
+            h = 1.15*sigma_est,
+            fast_mode = True,
+            patch_size = 9,
+            patch_distance = 5
+        )
+    return NLM_skimg_denoise_img
+
+def plotSlice(in_slice, fsize=(5,5)):
+    """
+    Plot 2D array
+    Input:
+        in_slice: 2d array, input image
+        fsize: (width, height), set figure size
+    Output:
+        fig: matplotlib figure
+    """
+    fig = plt.figure(figsize=fsize)
+    plt.imshow(in_slice, cmap='gray')
+    return fig
 
 if __name__ == '__main__':
     # Command line parsing
     parser = argparse.ArgumentParser(description='MRI image processing')
     parser.add_argument('-i', '--input', type=str, help='file path of input data')
     parser.add_argument('-o', '--output', type=str, help='file path of output data')
+    parser.add_argument('-a', '--axis', type=int, default=0, help='file path of output data')
     args = parser.parse_args()
-    print(args.input, args.output, os.path.dirname(args.output))
+    print(args)
 
     # Check arguments
-    if not os.path.exists(args.input):
+    if args.input is None:
+        print('Error: Please give input data file path with \"-i\" or \"--input\"')
+        sys.exit()
+    elif args.output is None:
+        print('Error: Please give output data file path with \"-o\" or \"--output\"')
+        sys.exit()
+    elif not os.path.exists(args.input):
         # input file path not exist
-        print("Input data file path not exist")
+        print("Error: Input data file path not exist")
         sys.exit()
     elif not os.path.exists(os.path.dirname(args.output)):
         # output file directory not exist
-        print("Ouput file directory not exist")
+        print("Error: Ouput file directory not exist")
         sys.exit()
     
     # Load input data
@@ -48,3 +91,33 @@ if __name__ == '__main__':
         print("Input file type is not supported")
         sys.exit()
 
+    # Plot slices
+    psidx = 100
+    slice0 = img_data[:, psidx, :]
+    s0fig = plotSlice(slice0)
+    
+    # Shift axis for process image along axis 0
+    if args.axis > len(img_data.shape)-1:
+        print('Error: Selected axis index is out of input data dimension')
+        sys.exit()
+    img_data = np.swapaxes(img_data, 0, args.axis)
+
+    # Loop through each slice
+    print("Start processing ......")
+    for ss in range(img_data.shape[0]):
+        ppslice = img_data[ss, :, :]
+        
+        # Image processing
+        # Denoise
+        ppslice = denoiseSlice(ppslice)
+        
+        # Append output
+        img_data[ss, :, :] = ppslice
+
+    # Unshift axis of axis 0 and target axis
+    img_data = np.swapaxes(img_data, 0, args.axis)
+
+    # Plot
+    final_s0 = img_data[:, psidx, :]
+    final_s0fig = plotSlice(final_s0)
+    plt.show()
