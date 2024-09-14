@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from skimage.restoration import denoise_nl_means,  estimate_sigma
 from skimage import filters
 import cv2
+from scipy.ndimage import zoom
 
 def denoiseSlice(in_slice, param):
     """
@@ -72,6 +73,19 @@ def thresholding(in_slice, param):
     binary_image = cv2.adaptiveThreshold(image_uint8, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, param.blocksize, 2)
     return binary_image
 
+def resampleSlice(in_tensor, param):
+    """
+    Resample / rescaling image with scipy.ndimage zoom
+    Input:
+        in_tensor: 3d tensor, input image
+        param: argparse arg
+    Output:
+        zoom_tensor: 3d tensor
+    """
+    # Apply zoom with interpolation (e.g., order=3 for cubic interpolation)
+    zoom_tensor = zoom(in_tensor, param.scalefactors, order=3)
+    return zoom_tensor
+
 def plotSlice(in_slice, fsize=(5,5)):
     """
     Plot 2D array
@@ -96,10 +110,12 @@ if __name__ == '__main__':
         '--process',
         nargs='+',
         type=str,
-        help='Image processing to do in order, support denoise, edgefilter, gaussianblur'
+        help='Image processing to do in order, support denoise, edgefilter, gaussianblur, thresholding, resample'
     )
     parser.add_argument('--sigma', type=float, default=1, help='sigma parameter of gaussian blur')
     parser.add_argument('--blocksize', type=int, default=11, help='odd number block size of adaptive thresholding')
+    parser.add_argument('--scalefactors', type=float, nargs=3, default=[0.5, 0.5, 0.5],
+                        help='list of scale factors of axis 0, 1, 2 (default: [0.5, 0.5, 0.5])')
     args = parser.parse_args()
     print(args)
 
@@ -128,7 +144,10 @@ if __name__ == '__main__':
     }
     profunc = []
     if args.process is not None:
-        for pf in args.process:
+        # neglect resample
+        pflist = args.process.copy()
+        pflist.remove('resample')
+        for pf in pflist:
             profunc.append(profunc_dict[pf])
     
     # Load input data
@@ -183,12 +202,15 @@ if __name__ == '__main__':
             ppslice = pfunc(ppslice, args)
         # Append output
         img_data[ss, :, :] = ppslice
-    print("Processing complete")
-
+    
     # Unshift axis of axis 0 and target axis
     img_data = np.swapaxes(img_data, 0, args.axis)
+    # always put resample size at last operation after unshift
+    if 'resample' in args.process:
+        img_data = resampleSlice(img_data, args)
+    print("Processing complete")   
 
     # Plot
-    final_s0 = img_data[psidx, :, :]
+    final_s0 = img_data[int(psidx*args.scalefactors[0]), :, :]
     final_s0fig = plotSlice(final_s0)
     plt.show()
