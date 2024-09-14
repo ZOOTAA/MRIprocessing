@@ -6,6 +6,7 @@ import nibabel as nib
 import nibabel.orientations as nio
 import matplotlib.pyplot as plt
 from skimage.restoration import denoise_nl_means,  estimate_sigma
+from skimage import filters
 
 def denoiseSlice(in_slice):
     """
@@ -13,21 +14,40 @@ def denoiseSlice(in_slice):
     Input:
         in_slice: 2d array, input image
     Output:
-        NLM_skimg_denoise_img: 2d array
+        denoise_img: 2d array
     """
     if np.mean(in_slice) == 0:
         # RuntimeWarning: Mean of empty slice
-        NLM_skimg_denoise_img = in_slice
+        denoise_img = in_slice
     else:
         sigma_est = np.mean(estimate_sigma(in_slice))
-        NLM_skimg_denoise_img = denoise_nl_means(
+        denoise_img = denoise_nl_means(
             in_slice,
             h = 1.15*sigma_est,
             fast_mode = True,
             patch_size = 9,
             patch_distance = 5
         )
-    return NLM_skimg_denoise_img
+    return denoise_img
+
+def edgefiltering(in_slice):
+    """
+    Edge filtering with scikit image Sobel filter
+    Input:
+        in_slice: 2d array, input image
+    Output:
+        edgedetect_img: 2d array
+    """
+    sobel_image = filters.sobel(in_slice)
+    return sobel_image
+
+def gaussianblur(in_slice, in_sigma=1):
+    """
+    
+    """
+    # Apply Gaussian Blur
+    blurred_image = filters.gaussian(in_slice, sigma=in_sigma)  # sigma defines the standard deviation
+    pass
 
 def plotSlice(in_slice, fsize=(5,5)):
     """
@@ -93,7 +113,7 @@ if __name__ == '__main__':
 
     # Plot slices
     psidx = 100
-    slice0 = img_data[:, psidx, :]
+    slice0 = img_data[psidx, :, :]
     s0fig = plotSlice(slice0)
     
     # Shift axis for process image along axis 0
@@ -105,19 +125,20 @@ if __name__ == '__main__':
     # Loop through each slice
     print("Start processing ......")
     for ss in range(img_data.shape[0]):
-        ppslice = img_data[ss, :, :]
-        
+        ppslice = img_data[ss, :, :]        
         # Image processing
         # Denoise
         ppslice = denoiseSlice(ppslice)
-        
+        # Edge detection
+        ppslice = edgefiltering(ppslice)
         # Append output
         img_data[ss, :, :] = ppslice
+    print("Processing complete")
 
     # Unshift axis of axis 0 and target axis
     img_data = np.swapaxes(img_data, 0, args.axis)
 
     # Plot
-    final_s0 = img_data[:, psidx, :]
+    final_s0 = img_data[psidx, :, :]
     final_s0fig = plotSlice(final_s0)
     plt.show()
