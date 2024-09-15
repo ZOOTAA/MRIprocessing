@@ -71,6 +71,8 @@ def thresholding(in_slice, param):
     # Convert to unsigned 8-bit (uint8)
     image_uint8 = normalized_image.astype(np.uint8)
     binary_image = cv2.adaptiveThreshold(image_uint8, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, param.blocksize, 2)
+    # Convert back to float32
+    binary_image = binary_image.astype(np.float32)
     return binary_image
 
 def resampleSlice(in_tensor, param):
@@ -86,6 +88,21 @@ def resampleSlice(in_tensor, param):
     zoom_tensor = zoom(in_tensor, param.scalefactors, order=3)
     return zoom_tensor
 
+def intensitynorm(in_tensor, param):
+    """
+    Intensity Normalisation with Min-Max Normalization to 1
+    Resample / rescaling image with scipy.ndimage zoom
+    Input:
+        in_tensor: 3d tensor, input image
+        param: argparse arg
+    Output:
+        norm_tensor: 3d tensor
+    """
+    tensor_min = np.min(in_tensor)
+    tensor_max = np.max(in_tensor)
+    norm_tensor = (in_tensor - tensor_min) / (tensor_max - tensor_min)
+    return norm_tensor
+
 def plotSlice(in_slice, fsize=(5,5)):
     """
     Plot 2D array
@@ -99,25 +116,75 @@ def plotSlice(in_slice, fsize=(5,5)):
     plt.imshow(in_slice, cmap='gray')
     return fig
 
+def plotOriProSlices(ori_data, pro_data, paxis, pindex, data_orientation, resamfact=1, fsize=(10,5)):
+    """
+    Plot original slice and processed slice for comparison
+    Input:
+        ori_data: 3d tensor, orignal data
+        pro_data: 3d tensor, processed data
+        paxis: int, plot slice with index on which axis
+        pindex: int, index of slice to be plotted
+        data_orientation: list of str, data orientation to plot image x, y axis
+        resamfact: float, resample factor of processed data, default is 1 means no resample
+        fsize: (width, height), set figure size
+    Output:
+        fig: matplotlib figure
+    """
+    # fix pindex range
+    pindex = min(max(pindex, 0), img_data.shape[paxis]-1)
+    # arrange plot axis to axis 0
+    ori_data = np.moveaxis(ori_data, paxis, 0)
+    pro_data = np.moveaxis(pro_data, paxis, 0)
+    # get slice
+    pslice = []
+    pslice.append(ori_data[pindex, :, :])
+    pslice.append(pro_data[int(pindex*resamfact), :, :])
+    # adjust x, y axis
+    data_orientation = list(data_orientation) # tuple to list
+    del data_orientation[paxis]
+    flip = 0 
+    if 'S' in data_orientation and data_orientation[0] != 'S': # case with 'S'
+        flip = 1
+    elif data_orientation[1] != 'R': # 'R', 'A' case
+        flip = 1
+    if flip:
+        data_orientation = data_orientation[::-1] # reverse list
+        for pidx in range(len(pslice)):
+            pslice[pidx] = pslice[pidx].transpose()
+    # plot slices
+    ptitle = ['Original', 'Processed']
+    fig, axs = plt.subplots(1, len(pslice), figsize=fsize)
+    for pidx in range(len(pslice)):
+        axs[pidx].imshow(pslice[pidx], cmap='gray', origin='lower')
+        axs[pidx].set_title(ptitle[pidx])
+        axs[pidx].set_xlabel(data_orientation[1])
+    axs[0].set_ylabel(data_orientation[0])
+    return fig
+
 if __name__ == '__main__':
     # Command line parsing
     parser = argparse.ArgumentParser(description='MRI image processing')
     parser.add_argument('-i', '--input', type=str, help='file path of input data')
     parser.add_argument('-o', '--output', type=str, help='file path of output data')
-    parser.add_argument('-a', '--axis', type=int, default=0, help='file path of output data')
+    parser.add_argument('-a', '--axis', type=int, default=0, help='process along slices on which axis index (default: 0')
     parser.add_argument(
         '-p',
         '--process',
         nargs='+',
         type=str,
-        help='Image processing to do in order, support denoise, edgefilter, gaussianblur, thresholding, resample'
+        help='image processing to do, support denoise, edgefilter, gaussianblur, thresholding, resample, norm. \
+        Resample is always the second last process and normalization is always the last process. \
+        Others follow user input order.'
     )
     parser.add_argument('--sigma', type=float, default=1, help='sigma parameter of gaussian blur')
     parser.add_argument('--blocksize', type=int, default=11, help='odd number block size of adaptive thresholding')
     parser.add_argument('--scalefactors', type=float, nargs=3, default=[0.5, 0.5, 0.5],
                         help='list of scale factors of axis 0, 1, 2 (default: [0.5, 0.5, 0.5])')
+    parser.add_argument('--plot', type=bool, default=0, help='switch for plotting orignal and processed slices (default: 0)')
+    parser.add_argument('--plotaxis', type=int, default=0, help='plot slice with index on which axis (default: 0)')
+    parser.add_argument('--plotindex', type=int, default=0, help='index of slice to be plotted (default: 0)')
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
     # Check arguments
     if args.input is None:
@@ -144,9 +211,12 @@ if __name__ == '__main__':
     }
     profunc = []
     if args.process is not None:
-        # neglect resample
+        # neglect resample, norm
         pflist = args.process.copy()
-        pflist.remove('resample')
+        if 'resample' in pflist:
+            pflist.remove('resample')
+        if 'norm' in pflist:
+            pflist.remove('norm')
         for pf in pflist:
             profunc.append(profunc_dict[pf])
     
@@ -160,7 +230,7 @@ if __name__ == '__main__':
         img_data = img_nib.get_fdata()
         print('\timage shape:', img_nib.shape)
         print('\tdata shape:', img_data.shape)
-        print('\tdata type:', type(img_data))
+        print('\tdata type:', type(img_data), type(img_data[0,0,0]))
         # volume info
         zooms = img_nib.header.get_zooms() # spacing between voxel
         print('\tzooms of the voxel:', zooms)
@@ -182,10 +252,9 @@ if __name__ == '__main__':
     args.imgmax = image_max
     print('\timage minimum:', image_min, ", image maximum:", image_max)
     
-    # Plot slices
-    psidx = 100
-    slice0 = img_data[psidx, :, :]
-    s0fig = plotSlice(slice0)
+    # copy initial image for plotting if require
+    if args.plot:
+        initial_img = img_data.copy()
 
     # Shift axis for process image along axis 0
     if args.axis > len(img_data.shape)-1:
@@ -205,12 +274,23 @@ if __name__ == '__main__':
     
     # Unshift axis of axis 0 and target axis
     img_data = np.swapaxes(img_data, 0, args.axis)
-    # always put resample size at last operation after unshift
+    # always put resample size at second last operation after unshift
+    plot_resamfact = 1 # scale factor for plotting
     if 'resample' in args.process:
         img_data = resampleSlice(img_data, args)
-    print("Processing complete")   
+        plot_resamfact = args.scalefactors[args.plotaxis]
+    # always put normalization at last operation
+    if 'norm' in args.process:
+        img_data = intensitynorm(img_data, args)
+    print("Processing complete")
 
-    # Plot
-    final_s0 = img_data[int(psidx*args.scalefactors[0]), :, :]
-    final_s0fig = plotSlice(final_s0)
-    plt.show()
+    # Create a new NIfTI image with the modified data and the original affine
+    new_img = nib.Nifti1Image(img_data, img_nib.affine, img_nib.header)
+    # Save processed data
+    nib.save(new_img, args.output)
+    print('Data is saved to', args.output)
+
+    # plotting orignal and processed slices
+    if args.plot:
+        fig = plotOriProSlices(initial_img, img_data, args.plotaxis, args.plotindex, axs_code, resamfact=plot_resamfact)
+        plt.show()
