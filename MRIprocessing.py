@@ -166,7 +166,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MRI image processing')
     parser.add_argument('-i', '--input', type=str, help='file path of input data')
     parser.add_argument('-o', '--output', type=str, help='file path of output data')
-    parser.add_argument('-a', '--axis', type=int, default=0, help='process along slices on which axis index (default: 0')
+    parser.add_argument('-a', '--axis', type=int, default=0, help='process along slices on which axis index (default: 0)')
     parser.add_argument(
         '-p',
         '--process',
