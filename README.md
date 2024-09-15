@@ -30,7 +30,7 @@ The script is executed with command line input. The following steps help setup t
    - python MRIprocessing.py -i \path\to\image_data.nii.gz -o \path\to\store_processed_data.nii.gz -p denoise
 
 ### Examples
-The example image data is from anatomical scan from Subject 2 in the MEG-BIDS dataset (https://s3.amazonaws.com/openneuro.org/ds000247/sub-0002/ses-01/anat/sub-0002_ses-01_T1w.nii.gz?versionId=71.XAnuxtjw6ITyFLSPZeH_lAayTeyvq). The slices which plotted below are the 101 slice along the left-right axis, showing the posterior-anterior and inferior-superior axises.
+The example image data is the anatomical scan from Subject 2 in the MEG-BIDS dataset (https://s3.amazonaws.com/openneuro.org/ds000247/sub-0002/ses-01/anat/sub-0002_ses-01_T1w.nii.gz?versionId=71.XAnuxtjw6ITyFLSPZeH_lAayTeyvq). The slices which plotted below are the 101 slice along the left-right axis, showing the posterior-anterior and inferior-superior axises.
 
 ### Gaussian blur
 The command is as follow,  
