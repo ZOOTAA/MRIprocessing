@@ -37,29 +37,31 @@ The command is as follow,
 python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\processout.nii.gz -a 0 -p gaussianblur --sigma 2 --plot 1 --plotindex 100 --plotaxis 0  
 '-a': process along slices on which axis index (default: 0)  
 '-p': image processing to do  
-'--sigma': sigma parameter of gaussian blur
-
-<img src="https://github.com/user-attachments/assets/3c338cf1-ee3f-490c-8c25-474c5d6e33e2" width="500" height="250">
+'--sigma': sigma parameter of gaussian blur  
+<img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_gaussblur_sigma2.png" width="600" height="300">
 
 ### Thresholding
 The command is as follow,  
 python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\processout.nii.gz -a 0 -p thresholding --blocksize 21 --plot 1 --plotindex 100 --plotaxis 0  
 '-a': process along slices on which axis index (default: 0)  
 '-p': image processing to do  
-'--blocksize': odd number block size of adaptive thresholding
+'--blocksize': odd number block size of adaptive thresholding  
+<img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_threshold_bsize21.png" width="600" height="300">
 
 ### Resample
 The command is as follow,  
 python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\processout.nii.gz -a 0 -p resample --scalefactors 0.8 0.8 0.8 --plot 1 --plotindex 100 --plotaxis 0  
 '-a': process along slices on which axis index (default: 0)  
 '-p': image processing to do  
-'--scalefactors': list of scale factors of axis 0, 1, 2 (default: [0.5, 0.5, 0.5])
+'--scalefactors': list of scale factors of axis 0, 1, 2 (default: [0.5, 0.5, 0.5])  
+<img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_resample_sfactor08.png" width="600" height="300">
 
 ### Denoise + Edge filtering + Intensity normalization
 The command is as follow,  
 python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\processout.nii.gz -a 0 -p denoise edgefilter norm --plot 1 --plotindex 100 --plotaxis 0  
 '-a': process along slices on which axis index (default: 0)  
-'-p': image processing to do, follow user input order
+'-p': image processing to do, follow user input order  
+<img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_denoise_edgefilter_norm.png" width="600" height="300">
 
 #### Commands for plotting figure
 '--plot': plotting orignal and processed slices figure (default: 0)  
