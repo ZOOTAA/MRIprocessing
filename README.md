@@ -25,7 +25,7 @@ The script is executed with command line input. The following steps help setup t
    - .venv\Scripts\activate (Windows)
 3. install all the packages in requirements.txt with pip
    - pip install -r \path\to\requirements.txt
-4. execute the script with command
+4. execute the script with command, enter '-h' will show help message with information of supported input parameters and options
    - python MRIprocessing.py -h
    - python MRIprocessing.py -i \path\to\image_data.nii.gz -o \path\to\store_processed_data.nii.gz -p denoise
 
@@ -56,11 +56,11 @@ python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\proce
 '--scalefactors': list of scale factors of axis 0, 1, 2 (default: [0.5, 0.5, 0.5])  
 <img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_resample_sfactor08.png" width="600" height="300">
 
-### Denoise + Edge filtering + Intensity normalization
+### Denoise -> Edge filtering -> Intensity normalization
 The command is as follow,  
 python MRIprocessing.py -i \path\to\sub-0002_ses-01_T1w.nii.gz -o \path\to\processout.nii.gz -a 0 -p denoise edgefilter norm --plot 1 --plotindex 100 --plotaxis 0  
 '-a': process along slices on which axis index (default: 0)  
-'-p': image processing to do, follow user input order  
+'-p': image processing functions to do, follow user input order, different order may turn into different result
 <img src="https://github.com/ZOOTAA/MRIprocessing/blob/main/processedImage/sub-0002_ses-01_T1w_denoise_edgefilter_norm.png" width="600" height="300">
 
 #### Commands for plotting figure
