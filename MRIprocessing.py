@@ -176,8 +176,8 @@ if __name__ == '__main__':
         Resample is always the second last process and normalization is always the last process. \
         Others follow user input order.'
     )
-    parser.add_argument('--denoisesize', type=int, default=9, help='patch size of non local mean denoising')
-    parser.add_argument('--denoisedist', type=int, default=5, help='patch distance of non local mean denoising')
+    parser.add_argument('--denoisesize', type=int, default=9, help='patch size of non local mean denoising (default: 9)')
+    parser.add_argument('--denoisedist', type=int, default=5, help='patch distance of non local mean denoising  (default: 5)')
     parser.add_argument('--sigma', type=float, default=1, help='sigma parameter of gaussian blur')
     parser.add_argument('--blocksize', type=int, default=11, help='odd number block size of adaptive thresholding')
     parser.add_argument('--scalefactors', type=float, nargs=3, default=[0.5, 0.5, 0.5],
